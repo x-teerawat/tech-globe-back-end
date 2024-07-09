@@ -105,13 +105,18 @@ schedule.every().thursday.at("20:30").do(add_daily_initial_credit)
 schedule.every().friday.at("20:30").do(add_daily_initial_credit)
 
 # ตั้งเวลางานให้รันทุกวันอังคาร-เสาร์ ตอนตี 5
-schedule.every().tuesday.at("05:00").do(update_credit_remaining)
-schedule.every().wednesday.at("05:00").do(update_credit_remaining)
-schedule.every().thursday.at("05:00").do(update_credit_remaining)
-schedule.every().friday.at("05:00").do(update_credit_remaining)
-schedule.every().saturday.at("05:00").do(update_credit_remaining)
+schedule.every().monday.at("20:30").do(update_credit_remaining)
+schedule.every().tuesday.at("20:30").do(update_credit_remaining)
+schedule.every().wednesday.at("20:30").do(update_credit_remaining)
+schedule.every().thursday.at("20:30").do(update_credit_remaining)
+schedule.every().friday.at("20:30").do(update_credit_remaining)
 
-# ลูปรัน schedule
+# ลูปรัน add_daily_initial_credit
 while True:
     schedule.run_pending()  # ตรวจสอบงานที่ต้องทำ
     time.sleep(1)  # รอ 1 วินาทีก่อนตรวจสอบงานอีกครั้ง
+    
+# ลูปรัน update_credit_remaining
+while True:
+    update_credit_remaining()  # ตรวจสอบงานที่ต้องทำ
+    time.sleep(0.1)  # รอ 1 วินาทีก่อนตรวจสอบงานอีกครั้ง

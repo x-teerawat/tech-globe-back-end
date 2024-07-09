@@ -98,18 +98,18 @@ def update_credit_remaining():
         
     
 # ตั้งเวลางานให้รันทุกวันจันทร์-ศุกร์ ตอน 2 ทุ่ม
-schedule.every().monday.at("18:49").do(add_daily_initial_credit)
-schedule.every().tuesday.at("18:49").do(add_daily_initial_credit)
-schedule.every().wednesday.at("18:49").do(add_daily_initial_credit)
-schedule.every().thursday.at("18:49").do(add_daily_initial_credit)
-schedule.every().friday.at("18:49").do(add_daily_initial_credit)
+schedule.every().monday.at("20:30").do(add_daily_initial_credit)
+schedule.every().tuesday.at("20:30").do(add_daily_initial_credit)
+schedule.every().wednesday.at("20:30").do(add_daily_initial_credit)
+schedule.every().thursday.at("20:30").do(add_daily_initial_credit)
+schedule.every().friday.at("20:30").do(add_daily_initial_credit)
 
-# ตั้งเวลางานให้รันทุกวันอังคาร-เสาร์ ตอนตี 4
-schedule.every().tuesday.at("18:50").do(update_credit_remaining)
-schedule.every().wednesday.at("18:50").do(update_credit_remaining)
-schedule.every().thursday.at("18:50").do(update_credit_remaining)
-schedule.every().friday.at("18:50").do(update_credit_remaining)
-schedule.every().saturday.at("18:50").do(update_credit_remaining)
+# ตั้งเวลางานให้รันทุกวันอังคาร-เสาร์ ตอนตี 5
+schedule.every().tuesday.at("05:00").do(update_credit_remaining)
+schedule.every().wednesday.at("05:00").do(update_credit_remaining)
+schedule.every().thursday.at("05:00").do(update_credit_remaining)
+schedule.every().friday.at("05:00").do(update_credit_remaining)
+schedule.every().saturday.at("05:00").do(update_credit_remaining)
 
 # ลูปรัน schedule
 while True:

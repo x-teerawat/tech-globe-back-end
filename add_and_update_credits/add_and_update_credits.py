@@ -1,8 +1,8 @@
-import asyncio
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 from datetime import datetime
 import schedule
+import time
 
 # ระบุข้อมูลรับรองการเชื่อมต่อกับ MongoDB
 tg_database = "tg"
@@ -21,8 +21,8 @@ try:
     print("Connection successful.")
 except ConnectionFailure:
     print("Server not available.")
-
-async def find_max_date():
+    
+def find_max_date():
     # Select/Create database
     _tg_back_end_database = client[tg_back_end_database]
 
@@ -38,15 +38,15 @@ async def find_max_date():
     else:
         print("No documents found in collection.")
         return None
-
-async def add_daily_initial_credit():
+    
+def add_daily_initial_credit():
     # tg database
-    _tg_database = client[tg_database]  # Select/Create database
-    _accounts_collection = _tg_database[accounts_collection]  # Select/Create collection
+    _tg_database = client[tg_database] # Select/Create database
+    _accounts_collection = _tg_database[accounts_collection] # Select/Create collection
 
     # tg-back-end database
-    _tg_back_end_database = client[tg_back_end_database]  # Select/Create database
-    _credit_info_collection = _tg_back_end_database[credit_info_collection]  # Select/Create collection
+    _tg_back_end_database = client[tg_back_end_database] # Select/Create database
+    _credit_info_collection = _tg_back_end_database[credit_info_collection] # Select/Create collection
 
     # Get data from collection
     projection = {"_id": 1, "creditAmount": 1}
@@ -58,61 +58,47 @@ async def add_daily_initial_credit():
             ### Add initial date
             account['date'] = initial_date
             _credit_info_collection.insert_one(account)
-
+            
         print("Insert completed")
     except Exception as e:
         print(f"Error to insert: {e}")
-
-async def update_credit_remaining():
+    
+def update_credit_remaining():
     # tg database
-    _tg_database = client[tg_database]  # Select/Create database
-    _accounts_collection = _tg_database[accounts_collection]  # Select/Create collection
+    _tg_database = client[tg_database] # Select/Create database
+    _accounts_collection = _tg_database[accounts_collection] # Select/Create collection
 
     # tg-back-end database
-    _tg_back_end_database = client[tg_back_end_database]  # Select/Create database
-    _credit_info_collection = _tg_back_end_database[credit_info_collection]  # Select/Create collection
+    _tg_back_end_database = client[tg_back_end_database] # Select/Create database
+    _credit_info_collection = _tg_back_end_database[credit_info_collection] # Select/Create collection
 
     # Get data from collection
     projection = {"_id": 1, "creditRemaining": 1}
     accounts_data = _accounts_collection.find(projection=projection)
-
+    
     ### Add initial date to each account
     try:
         for account in accounts_data:
             account_id = account['_id']
             credit_remaining = account['creditRemaining']
-            max_date = await find_max_date()
-
+            max_date = find_max_date()
+            
             ### Update the credit remaining
             result = _credit_info_collection.update_one(
                 {"_id": account_id, "date": max_date},
                 {"$set": {"creditRemaining": credit_remaining}}
             )
+            print(f'account, {account}')
         print("Update completed")
     except Exception as e:
         print(f"Error to update: {e}")
 
-def run_schedule():
-    # ตั้งเวลางานให้รันทุกวันจันทร์-ศุกร์ ตอน 2 ทุ่ม
-    schedule.every().monday.at("20:30").do(lambda: asyncio.create_task(add_daily_initial_credit()))
-    schedule.every().tuesday.at("20:30").do(lambda: asyncio.create_task(add_daily_initial_credit()))
-    schedule.every().wednesday.at("20:30").do(lambda: asyncio.create_task(add_daily_initial_credit()))
-    schedule.every().thursday.at("20:30").do(lambda: asyncio.create_task(add_daily_initial_credit()))
-    schedule.every().friday.at("20:30").do(lambda: asyncio.create_task(add_daily_initial_credit()))
+# ตั้งเวลางานให้รันทุกวันจันทร์-ศุกร์ ตอน 2 ทุ่มครึ่ง
+schedule.every().day.at("20:29").do(add_daily_initial_credit)
+schedule.every().day.at("20:30").do(add_daily_initial_credit)
 
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-
-async def main():
-    # ลูปรัน update_credit_remaining ทุก 0.1 วินาที
-    while True:
-        await update_credit_remaining()
-        await asyncio.sleep(0.1)
-
-# Run the schedule in a separate thread
-import threading
-threading.Thread(target=run_schedule).start()
-
-# Run the main async function
-asyncio.run(main())
+# ลูปรัน schedule และอัพเดทเครดิตคงเหลือ
+while True:
+    schedule.run_pending()  # ตรวจสอบงานที่ต้องทำ
+    update_credit_remaining()  # อัพเดทเครดิตคงเหลือ
+    time.sleep(0.1)  # รอ 0.1 วินาทีก่อนตรวจสอบงานอีกครั้ง

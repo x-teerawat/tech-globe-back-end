@@ -22,19 +22,18 @@ try:
 except ConnectionFailure:
     print("Server not available.")
     
-def find_max_date():
+def find_last_date(collection_name):
     # Select/Create database
     _tg_back_end_database = client[tg_back_end_database]
 
     # Select/Create collection
-    _credit_info_collection = _tg_back_end_database[credit_info_collection]
+    _collection_name = _tg_back_end_database[collection_name]
 
     # Find the document with the maximum date
-    max_date_document = _credit_info_collection.find_one(sort=[("date", -1)])
-    if max_date_document:
-        max_date = max_date_document.get("date")
-        print(f"Maximum date in collection: {max_date}")
-        return max_date
+    last_date_document = _collection_name.find_one(sort=[("date", -1)])
+    if last_date_document:
+        last_date = last_date_document.get("date")
+        return last_date
     else:
         print("No documents found in collection.")
         return None
@@ -46,10 +45,11 @@ def add_daily_initial_credit():
 
     # tg-back-end database
     _tg_back_end_database = client[tg_back_end_database] # Select/Create database
-    _credit_info_collection = _tg_back_end_database[credit_info_collection] # Select/Create collection
+    demo_credit_collection = _tg_back_end_database['demo-credit'] # Select/Create collection
+    live_credit_collection = _tg_back_end_database['live-credit'] # Select/Create collection
 
     # Get data from collection
-    projection = {"_id": 1, "creditAmount": 1}
+    projection = {"email": 1, "creditAmount": 1, "isDemo": 1}
     accounts_data = _accounts_collection.find(projection=projection)
 
     ### Insert credit amount to database
@@ -57,12 +57,23 @@ def add_daily_initial_credit():
         for account in accounts_data:
             ### Add initial date
             account['date'] = initial_date
-            _credit_info_collection.insert_one(account)
+            isDemo = account['isDemo']
+            
+            ### Reorder dictionary
+            desired_order_list = ['email', 'date', 'creditAmount']
+            reordered_dict = {k: account[k] for k in desired_order_list}
+            
+            ### Insert creditAmount to data base
+            if isDemo == True:
+                demo_credit_collection.insert_one(reordered_dict)
+            else:
+                live_credit_collection.insert_one(reordered_dict)
             
         print("Insert completed")
     except Exception as e:
         print(f"Error to insert: {e}")
-    
+
+
 def update_credit_remaining():
     # tg database
     _tg_database = client[tg_database] # Select/Create database
@@ -70,24 +81,34 @@ def update_credit_remaining():
 
     # tg-back-end database
     _tg_back_end_database = client[tg_back_end_database] # Select/Create database
-    _credit_info_collection = _tg_back_end_database[credit_info_collection] # Select/Create collection
+    demo_credit_collection = _tg_back_end_database['demo-credit'] # Select/Create collection
+    live_credit_collection = _tg_back_end_database['live-credit'] # Select/Create collection
 
     # Get data from collection
-    projection = {"_id": 1, "creditRemaining": 1}
+    projection = {"email": 1, "creditRemaining": 1, "isDemo": 1}
     accounts_data = _accounts_collection.find(projection=projection)
     
     ### Add initial date to each account
     try:
         for account in accounts_data:
-            account_id = account['_id']
+            email = account['email']
             credit_remaining = account['creditRemaining']
-            max_date = find_max_date()
+            isDemo = account['isDemo']
             
             ### Update the credit remaining
-            result = _credit_info_collection.update_one(
-                {"_id": account_id, "date": max_date},
-                {"$set": {"creditRemaining": credit_remaining}}
-            )
+            if isDemo == True:
+                last_date = find_last_date('demo-credit')
+                result = demo_credit_collection.update_one(
+                    {"email": email, "date": last_date},
+                    {"$set": {"creditRemaining": credit_remaining}}
+                )
+            else:
+                last_date = find_last_date('live-credit')
+                result = live_credit_collection.update_one(
+                    {"email": email, "date": last_date},
+                    {"$set": {"creditRemaining": credit_remaining}}
+                )
+                
             print(f'account, {account}')
         print("Update completed")
     except Exception as e:

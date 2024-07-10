@@ -3,8 +3,13 @@ import ssl
 import json
 
 def callback(ch, method, properties, body):
-    message = json.loads(body)
-    print(" [x] Received %r" % message)
+    try:
+        # แปลงข้อความ JSON กลับเป็น dictionary
+        message = json.loads(body)
+        print(" [x] Received %r" % message)
+    except json.JSONDecodeError as e:
+        print(f"Failed to decode JSON: {e}")
+        print(f"Message body: {body}")
 
 def receive_message():
     url = 'b-0e12009e-43dd-49ba-8ba1-7657911bb4f9.mq.ap-southeast-1.amazonaws.com'

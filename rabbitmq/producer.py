@@ -29,8 +29,8 @@ def send_message(message):
     message_json = json.dumps(message)
     
     # ส่งข้อความไปยังคิว
-    channel.basic_publish(exchange='trading.robot',
-                          routing_key='task_queue',
+    channel.basic_publish(exchange='',
+                          routing_key='trading.robot',
                           body=message_json)
     
     print(" [x] Sent %r" % message_json)

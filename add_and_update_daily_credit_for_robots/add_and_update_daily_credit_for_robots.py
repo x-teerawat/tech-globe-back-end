@@ -9,7 +9,6 @@ tg_database = "tg"
 accounts_collection = "accounts"
 
 tg_back_end_database = "tg-back-end"
-credit_info_collection = "credit-info"
 initial_date = datetime.today().strftime('%Y-%m-%d')
 
 # สร้างการเชื่อมต่อกับ MongoDB

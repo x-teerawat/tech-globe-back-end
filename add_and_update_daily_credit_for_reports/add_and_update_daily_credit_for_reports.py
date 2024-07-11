@@ -63,9 +63,9 @@ def add_daily_initial_credit():
             account['date'] = initial_date
             _credit_info_collection.insert_one(account)
             
-        print("Insert completed")
+        print(f"[{datetime.now()}], Insert completed")
     except Exception as e:
-        print("Error to insert: {e}")
+        print("[{datetime.now()}], Error to insert: {e}")
     
 def update_credit_remaining():
     # tg database
@@ -92,10 +92,9 @@ def update_credit_remaining():
                 {"_id": account_id, "date": max_date},
                 {"$set": {"creditRemaining": credit_remaining}}
             )
-        print("Update completed")
+        print(f"[{datetime.now()}], Update completed")
     except Exception as e:
-        print(f"Error to update: {e}")
-        
+        print(f"[{datetime.now()}], Error to update: {e}")
     
 # ตั้งเวลางานให้รันทุกวันจันทร์-ศุกร์ ตอน 2 ทุ่ม
 schedule.every().monday.at("20:30").do(add_daily_initial_credit)

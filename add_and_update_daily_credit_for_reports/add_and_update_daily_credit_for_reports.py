@@ -26,18 +26,18 @@ try:
 except ConnectionFailure:
     print("Server not available.")
     
-def find_max_date():
+def get_last_date():
     # Select/Create database
     _tg_back_end_database = client[tg_back_end_database]
 
     # Select/Create collection
     credit_of_tg_back_end = _tg_back_end_database[credit_info_collection]
 
-    # Find the document with the maximum date
-    max_date_document = credit_of_tg_back_end.find_one(sort=[("date", -1)])
-    if max_date_document:
-        max_date = max_date_document.get("date")
-        return max_date
+    # Find the document with the last date
+    last_date_document = credit_of_tg_back_end.find_one(sort=[("date", -1)])
+    if last_date_document:
+        last_date = last_date_document.get("date")
+        return last_date
         
     else:
         print("No documents found in collection.")
@@ -68,10 +68,10 @@ def add_daily_initial_credit():
             
             ### Convert decimal128 to float
             credit_amount = float(account['creditAmount'].to_decimal())
-            account['creditAmount'] = credit_amount
+            account['initialCredit'] = credit_amount
             
             ### Reorder dictionary
-            desired_order_list = ['accountId', 'date', 'creditAmount']
+            desired_order_list = ['accountId', 'date', 'initialCredit']
             reordered_dict = {k: account[k] for k in desired_order_list}
             
             credit_of_tg_back_end.insert_one(reordered_dict)
@@ -94,14 +94,14 @@ def update_credit_remaining():
     
     ### Add initial date to each account
     try:
-        max_date = find_max_date()
+        last_date = get_last_date()
         for account in accounts_data:
             account_id = account['_id']
             credit_remaining = account['creditRemaining']
             
             ### Update the credit remaining
             result = credit_of_tg_back_end.update_one(
-                {"accountId": account_id, "date": max_date},
+                {"accountId": account_id, "date": last_date},
                 {"$set": {"creditRemaining": credit_remaining}}
             )
         print(f"Update completed, [{datetime.now()}]")
@@ -109,7 +109,6 @@ def update_credit_remaining():
         print(f"Error to update: {e}, [{datetime.now()}]")
     
 # ตั้งเวลางานให้รันทุกวันจันทร์-ศุกร์ ตอน 2 ทุ่มครึ่ง
-# schedule.every().monday.at("17:20:45").do(add_daily_initial_credit)
 schedule.every().monday.at("20:30").do(add_daily_initial_credit)
 schedule.every().tuesday.at("20:30").do(add_daily_initial_credit)
 schedule.every().wednesday.at("20:30").do(add_daily_initial_credit)

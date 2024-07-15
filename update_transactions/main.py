@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
-from datetime import datetime
+from datetime import datetime, time as dtime
 import schedule
 import pandas as pd
 import numpy as np
@@ -47,11 +47,11 @@ class UpdateTransactions():
         projection = {"account_id": 1}
         self.list_account_id = [i['_id'] for i in self.accounts_of_tg.find(projection=projection)]
         
-        print(f"All Account Id: {self.list_account_id}")
+        # print(f"All Account Id: {self.list_account_id}")
         
-        print()
-        print("-"*50)
-        print()
+        # print()
+        # print("-"*50)
+        # print()
         
     ### Get last date
     def get_last_date(self):
@@ -64,11 +64,11 @@ class UpdateTransactions():
             print("No documents found in collection.")
             self.last_date =  None
             
-        print(f"Last date: {self.last_date}")  
+        # print(f"Last date: {self.last_date}")  
         
-        print()
-        print("-"*50)
-        print()
+        # print()
+        # print("-"*50)
+        # print()
         
     def compare_n_transactions_between_tg_and_tg_back_end(self):
         n_transactions_in_tg = self.transactions_of_tg.count_documents({})
@@ -153,6 +153,31 @@ class UpdateTransactions():
                 self.check_not_updated_transaction_id()
                 self.update_credit_to_transactions()
             time.sleep(1)
+            
+    ### Determine schedule
+    def is_within_time_range(self):
+        now = datetime.now()
+        current_time = now.time()
+        start_time_evening = dtime(20, 30)
+        end_time_morning = dtime(5, 0)
+
+        if now.weekday() < 5:  # Monday to Friday
+            if start_time_evening <= current_time or current_time <= end_time_morning:
+                return True
+        elif now.weekday() == 5:  # Saturday
+            if current_time <= end_time_morning:
+                return True
+        return False
+
+    def scheduled_job(self):
+        if self.is_within_time_range():
+            self.run()
         
 if __name__ == "__main__":
-    UpdateTransactions().run()
+    
+    ### Schedule the job every second
+    schedule.every(1).seconds.do(UpdateTransactions().scheduled_job)
+
+    while True:
+        schedule.run_pending()
+        time.sleep(1)

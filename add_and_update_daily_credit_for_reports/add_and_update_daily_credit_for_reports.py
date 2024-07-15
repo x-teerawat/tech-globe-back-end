@@ -4,6 +4,8 @@ from datetime import datetime
 import schedule
 import pandas as pd
 import time
+from bson.decimal128 import Decimal128
+
 
 # ระบุข้อมูลรับรองการเชื่อมต่อกับ MongoDB
 # database_name = "tg-back-end"
@@ -29,13 +31,12 @@ def find_max_date():
     _tg_back_end_database = client[tg_back_end_database]
 
     # Select/Create collection
-    _credit_info_collection = _tg_back_end_database[credit_info_collection]
+    credit_of_tg_back_end = _tg_back_end_database[credit_info_collection]
 
     # Find the document with the maximum date
-    max_date_document = _credit_info_collection.find_one(sort=[("date", -1)])
+    max_date_document = credit_of_tg_back_end.find_one(sort=[("date", -1)])
     if max_date_document:
         max_date = max_date_document.get("date")
-        print(f"Maximum date in collection: {max_date}")
         return max_date
         
     else:
@@ -46,57 +47,69 @@ def add_daily_initial_credit():
     
     # tg database
     _tg_database = client[tg_database] # Select/Create database
-    _accounts_collection = _tg_database[accounts_collection] # Select/Create collection
+    accounts_of_tg = _tg_database[accounts_collection] # Select/Create collection
 
     # tg-back-end database
     _tg_back_end_database = client[tg_back_end_database] # Select/Create database
-    _credit_info_collection = _tg_back_end_database[credit_info_collection] # Select/Create collection
+    credit_of_tg_back_end = _tg_back_end_database[credit_info_collection] # Select/Create collection
 
-    # Get data from collection
+    ### Get data from collection
     projection = {"_id": 1, "creditAmount": 1}
-    accounts_data = _accounts_collection.find(projection=projection)
+    accounts_data = accounts_of_tg.find(projection=projection)
 
     ### Insert credit amount to database
     try:
         for account in accounts_data:
             ### Add initial date
             account['date'] = initial_date
-            _credit_info_collection.insert_one(account)
             
-        print(f"[{datetime.now()}], Insert completed")
+            ### Rename _id to accountId key
+            account['accountId'] = account['_id']
+            
+            ### Convert decimal128 to float
+            credit_amount = float(account['creditAmount'].to_decimal())
+            account['creditAmount'] = credit_amount
+            
+            ### Reorder dictionary
+            desired_order_list = ['accountId', 'date', 'creditAmount']
+            reordered_dict = {k: account[k] for k in desired_order_list}
+            
+            credit_of_tg_back_end.insert_one(reordered_dict)
+        print(f"Insert completed, [{datetime.now()}]")
     except Exception as e:
-        print("[{datetime.now()}], Error to insert: {e}")
+        print(f"Error to insert: {e}, [{datetime.now()}]")
     
 def update_credit_remaining():
-    # tg database
+    ### tg database
     _tg_database = client[tg_database] # Select/Create database
-    _accounts_collection = _tg_database[accounts_collection] # Select/Create collection
+    accounts_of_tg = _tg_database[accounts_collection] # Select/Create collection
 
-    # tg-back-end database
+    ### tg-back-end database
     _tg_back_end_database = client[tg_back_end_database] # Select/Create database
-    _credit_info_collection = _tg_back_end_database[credit_info_collection] # Select/Create collection
+    credit_of_tg_back_end = _tg_back_end_database[credit_info_collection] # Select/Create collection
 
     # Get data from collection
     projection = {"_id": 1, "creditRemaining": 1}
-    accounts_data = _accounts_collection.find(projection=projection)
+    accounts_data = accounts_of_tg.find(projection=projection)
     
     ### Add initial date to each account
     try:
+        max_date = find_max_date()
         for account in accounts_data:
             account_id = account['_id']
             credit_remaining = account['creditRemaining']
-            max_date = find_max_date()
             
             ### Update the credit remaining
-            result = _credit_info_collection.update_one(
-                {"_id": account_id, "date": max_date},
+            result = credit_of_tg_back_end.update_one(
+                {"accountId": account_id, "date": max_date},
                 {"$set": {"creditRemaining": credit_remaining}}
             )
-        print(f"[{datetime.now()}], Update completed")
+        print(f"Update completed, [{datetime.now()}]")
     except Exception as e:
-        print(f"[{datetime.now()}], Error to update: {e}")
+        print(f"Error to update: {e}, [{datetime.now()}]")
     
-# ตั้งเวลางานให้รันทุกวันจันทร์-ศุกร์ ตอน 2 ทุ่ม
+# ตั้งเวลางานให้รันทุกวันจันทร์-ศุกร์ ตอน 2 ทุ่มครึ่ง
+# schedule.every().monday.at("17:20:45").do(add_daily_initial_credit)
 schedule.every().monday.at("20:30").do(add_daily_initial_credit)
 schedule.every().tuesday.at("20:30").do(add_daily_initial_credit)
 schedule.every().wednesday.at("20:30").do(add_daily_initial_credit)

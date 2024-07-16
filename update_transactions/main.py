@@ -45,9 +45,9 @@ class UpdateTransactions():
     ### Get account id
     def get_account_id(self):
         projection = {"account_id": 1}
-        self.list_account_id = [i['_id'] for i in self.accounts_of_tg.find(projection=projection)]
+        self.list_account_ids = [i['_id'] for i in self.accounts_of_tg.find(projection=projection)]
         
-        # print(f"All Account Id: {self.list_account_id}")
+        # print(f"All Account Id: {self.list_account_ids}")
         
         # print()
         # print("-"*50)
@@ -75,16 +75,16 @@ class UpdateTransactions():
         n_transactions_in_tg_back_end = self.transactions_of_tg_back_end.count_documents({})
         
         if n_transactions_in_tg > n_transactions_in_tg_back_end:
-            self.IsUpdate = True
+            self.IsUpdateTransaction = True
         elif n_transactions_in_tg == n_transactions_in_tg_back_end:
-            self.IsUpdate = False
+            self.IsUpdateTransaction = False
         else:
             print(f"n_transactions_in_tg ({n_transactions_in_tg}) < n_transactions_in_tg_back_end ({n_transactions_in_tg_back_end})")
-            self.IsUpdate = None
+            self.IsUpdateTransaction = None
         
         print(f"n_transactions_in_tg: {n_transactions_in_tg}")
         print(f"n_transactions_in_tg_back_end: {n_transactions_in_tg_back_end}")
-        print(f"IsUpdate: {self.IsUpdate}, [{datetime.now()}]")
+        print(f"IsUpdateTransaction: {self.IsUpdateTransaction}, [{datetime.now()}]")
          
         print()
         print("-"*50)
@@ -97,14 +97,14 @@ class UpdateTransactions():
         
         query = {
             "$and": [
-                {"accountId": {"$in": self.list_account_id}},
+                {"accountId": {"$in": self.list_account_ids}},
                 {"date": self.last_date},
             ]
         }
         accounts_data = self.credit_info_of_tg_back_end.find(query)
-        self.dict_initial_credit = {i["accountId"]:i["initialCredit"] for i in accounts_data}
+        self.dict_initial_credits = {i["accountId"]:i["initialCredit"] for i in accounts_data}
         
-        # print(f"Dict initial credit: {self.dict_initial_credit}")
+        # print(f"Dict initial credit: {self.dict_initial_credits}")
         
         # print()
         # print("-"*50)
@@ -130,7 +130,7 @@ class UpdateTransactions():
                 
                 ### Insert the initial credit
                 accountId = not_updated_data['accountId']
-                initial_credit = self.dict_initial_credit[accountId]
+                initial_credit = self.dict_initial_credits[accountId]
                 not_updated_data['initialCredit'] = initial_credit
                 
                 self.transactions_of_tg_back_end.insert_one(not_updated_data)
@@ -145,14 +145,67 @@ class UpdateTransactions():
         print("-"*50)
         print()
         
+    def compare_n_closed_status_between_tg_and_tg_back_end(self):
+        self.query_closed_status = {'status': 'closed'}
+        n_closed_status_in_tg = self.transactions_of_tg.count_documents(self.query_closed_status)
+        n_closed_status_in_tg_back_end = self.transactions_of_tg_back_end.count_documents(self.query_closed_status)
+        
+        if n_closed_status_in_tg > n_closed_status_in_tg_back_end:
+            self.IsUpdateStatus = True
+        elif n_closed_status_in_tg == n_closed_status_in_tg_back_end:
+            self.IsUpdateStatus = False
+        else:
+            print(f"n_closed_status_in_tg ({n_closed_status_in_tg}) < n_closed_status_in_tg_back_end ({n_closed_status_in_tg_back_end})")
+            self.IsUpdateStatus = None
+        
+        print(f"n_closed_status_in_tg: {n_closed_status_in_tg}")
+        print(f"n_closed_status_in_tg_back_end: {n_closed_status_in_tg_back_end}")
+        print(f"IsUpdateStatus: {self.IsUpdateStatus}, [{datetime.now()}]")
+         
+        print()
+        print("-"*50)
+        print()
+        
+    def check_not_updated_status_id(self):
+        status_id_of_tg = set([i['_id'] for i in self.transactions_of_tg.find(self.query_closed_status)])
+        status_id_of_tg_back_end = set([i['_id'] for i in self.transactions_of_tg_back_end.find(self.query_closed_status)])
+        self.list_not_updated_status_id = sorted(list(status_id_of_tg - status_id_of_tg_back_end)) # Convert set to list type and ascending sort
+        
+        print(f"List not updated status id: {self.list_not_updated_status_id}")
+        print(f"Amount of not updated status id: {len(self.list_not_updated_status_id)}")
+            
+        print()
+        print("-"*50)
+        print()
+        
+    def update_status(self):
+        for not_updated_status_id in self.list_not_updated_status_id:
+            updated_status_data = self.transactions_of_tg.find_one({"_id": not_updated_status_id})
+            update_status_result = self.transactions_of_tg_back_end.update_one({'_id': not_updated_status_id}, {'$set': updated_status_data})
+            print(f'Update status at id: {not_updated_status_id}, modified count: {update_status_result.modified_count}')
+            
+        print()
+        print("-"*50)
+        print()
+        
+        
     def run(self):
         while True:
+            ### Check and update transactions
             self.compare_n_transactions_between_tg_and_tg_back_end()
-            if self.IsUpdate:
+            if self.IsUpdateTransaction:
                 self.get_last_initial_credits()
                 self.check_not_updated_transaction_id()
                 self.update_credit_to_transactions()
+                
+            ### Check and update statuses
+            self.compare_n_closed_status_between_tg_and_tg_back_end()
+            if self.IsUpdateStatus:
+                self.check_not_updated_status_id()
+                self.update_status()
+            
             time.sleep(1)
+            
             
     ### Determine schedule
     def is_within_time_range(self):
@@ -174,10 +227,10 @@ class UpdateTransactions():
             self.run()
         
 if __name__ == "__main__":
-    
+    UpdateTransactions().run()
     ### Schedule the job every second
-    schedule.every(1).seconds.do(UpdateTransactions().scheduled_job)
+    # schedule.every(1).seconds.do(UpdateTransactions().scheduled_job)
 
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    # while True:
+        # schedule.run_pending()
+        # time.sleep(1)

@@ -108,6 +108,8 @@ class CheckDatabaseSimilarity():
                         {'$set': transactions_of_tg_doc}
                     )
                     print(f"Updated document with transaction_id: {transaction_id} [{datetime.now()}]")
+                    
+        print()
 
     ### ฟังก์ชันที่จะรันเป็น schedule
     def job(self):

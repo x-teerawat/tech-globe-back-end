@@ -146,7 +146,7 @@ class UpdateTransactions():
         print()
         
     def compare_n_closed_status_between_tg_and_tg_back_end(self):
-        self.query_closed_status = {'status': 'closed'}
+        self.query_closed_status = {'$or': [{"status": 'new'}, {"status": 'closed'}, {"status": 'filled'}, {"status": 'closed'}, {"status": 'canceled'}]}
         n_closed_status_in_tg = self.transactions_of_tg.count_documents(self.query_closed_status)
         n_closed_status_in_tg_back_end = self.transactions_of_tg_back_end.count_documents(self.query_closed_status)
         
@@ -192,17 +192,17 @@ class UpdateTransactions():
     def run(self):
         while True:
             ### Check and update transactions
-            self.compare_n_transactions_between_tg_and_tg_back_end()
-            if self.IsUpdateTransaction:
-                self.get_last_initial_credits()
-                self.check_not_updated_transaction_id()
-                self.update_credit_to_transactions()
+            # self.compare_n_transactions_between_tg_and_tg_back_end()
+            # if self.IsUpdateTransaction:
+            #     self.get_last_initial_credits()
+            #     self.check_not_updated_transaction_id()
+            #     self.update_credit_to_transactions()
                 
             ### Check and update statuses
             self.compare_n_closed_status_between_tg_and_tg_back_end()
             if self.IsUpdateStatus:
                 self.check_not_updated_status_id()
-                self.update_status()
+                # self.update_status()
             
             time.sleep(1)
             

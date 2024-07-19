@@ -13,7 +13,7 @@ tg_database = "tg"
 accounts_collection = "accounts"
 
 tg_back_end_database = "tg-back-end"
-credit_info_collection = "credit-info"
+credits_collection = "credits"
 initial_date = datetime.today().strftime('%Y-%m-%d')
 
 # สร้างการเชื่อมต่อกับ MongoDB
@@ -31,7 +31,7 @@ def get_last_date():
     _tg_back_end_database = client[tg_back_end_database]
 
     # Select/Create collection
-    credit_of_tg_back_end = _tg_back_end_database[credit_info_collection]
+    credit_of_tg_back_end = _tg_back_end_database[credits_collection]
 
     # Find the document with the last date
     last_date_document = credit_of_tg_back_end.find_one(sort=[("date", -1)])
@@ -51,7 +51,7 @@ def add_daily_initial_credit():
 
     # tg-back-end database
     _tg_back_end_database = client[tg_back_end_database] # Select/Create database
-    credit_of_tg_back_end = _tg_back_end_database[credit_info_collection] # Select/Create collection
+    credit_of_tg_back_end = _tg_back_end_database[credits_collection] # Select/Create collection
 
     ### Get data from collection
     projection = {"_id": 1, "creditAmount": 1}
@@ -86,7 +86,7 @@ def update_credit_remaining():
 
     ### tg-back-end database
     _tg_back_end_database = client[tg_back_end_database] # Select/Create database
-    credit_of_tg_back_end = _tg_back_end_database[credit_info_collection] # Select/Create collection
+    credit_of_tg_back_end = _tg_back_end_database[credits_collection] # Select/Create collection
 
     # Get data from collection
     projection = {"_id": 1, "creditRemaining": 1}

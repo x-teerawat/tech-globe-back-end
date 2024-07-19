@@ -1,0 +1,127 @@
+from pymongo import MongoClient
+
+class CheckDatabaseSimilarity():
+    def __init__(self):
+        ### สร้างการเชื่อมต่อกับ MongoDB
+        client = MongoClient(f"mongodb://ubuntu:techglobetrading@13.229.230.27:27017")
+        
+        ### Database
+        tg_database = "tg"
+        tg_back_end_database = "tg-back-end"
+        
+        ### Collections
+        transactions_collection = "transactions"
+        accounts_collection = "accounts"
+        credits_collection = "credits"
+        
+        ### tg database
+        _tg_database = client[tg_database] # Select/Create database
+        self.transactions_of_tg = _tg_database[transactions_collection] # Select/Create collection
+        
+        ### tg-back-end database
+        _tg_back_end_database = client[tg_back_end_database] # Select/Create database
+        self.transactions_of_tg_back_end = _tg_back_end_database[transactions_collection] # Select/Create collection
+        self.accounts_of_tg = _tg_database[accounts_collection] # Select/Create collection
+        self.credit_info_of_tg_back_end = _tg_back_end_database[credits_collection] # Select/Create collection
+
+        try:
+            # พยายามดึงข้อมูลเซิร์ฟเวอร์
+            client.admin.command('ping')
+            print("Connection successful.")
+        except ConnectionFailure:
+            print("Server not available.")   
+        
+        ### Get last initial credits
+        self.get_last_initial_credits()
+        print()
+        print("-"*50)
+        print()
+        
+    ### Get account id
+    def get_account_id(self):
+        projection = {"account_id": 1}
+        self.list_account_ids = [i['_id'] for i in self.accounts_of_tg.find(projection=projection)]
+        
+        # print(f"All Account Id: {self.list_account_ids}")
+        
+        # print()
+        # print("-"*50)
+        # print()
+        
+    ### Get last date
+    def get_last_date(self):
+        # Find the document with the last date
+        last_date_document = self.credit_info_of_tg_back_end.find_one(sort=[("date", -1)])
+        if last_date_document:
+            self.last_date = last_date_document.get("date")
+            
+        else:
+            print("No documents found in collection.")
+            self.last_date =  None
+            
+        # print(f"Last date: {self.last_date}")  
+        
+        # print()
+        # print("-"*50)
+        # print() 
+        
+    ### Get last initial credits
+    def get_last_initial_credits(self):
+        self.get_account_id()
+        self.get_last_date()
+        
+        query = {
+            "$and": [
+                {"accountId": {"$in": self.list_account_ids}},
+                {"date": self.last_date},
+            ]
+        }
+        accounts_data = self.credit_info_of_tg_back_end.find(query)
+        self.dict_initial_credits = {i["accountId"]:i["initialCredit"] for i in accounts_data}
+
+    # สร้างฟังก์ชันเพื่อเปรียบเทียบข้อมูล
+    def compare_collections(self):
+        transactions_of_tg_data = list(self.transactions_of_tg.find({}))
+        transactions_of_tg_back_end_data = list(self.transactions_of_tg_back_end.find({}))
+        
+        # เปรียบเทียบจำนวนเอกสาร
+        if len(transactions_of_tg_data) != len(transactions_of_tg_back_end_data):
+            print("len(transactions_of_tg_data) != len(transactions_of_tg_back_end_data)")
+        else:
+            print("len(transactions_of_tg_data) == len(transactions_of_tg_back_end_data)")
+
+        # เปรียบเทียบเอกสารทีละเอกสาร
+        transactions_of_tg_data_ids = {doc['_id']: doc for doc in transactions_of_tg_data}
+        transactions_of_tg_back_end_data_ids = {doc['_id']: doc for doc in transactions_of_tg_back_end_data}
+        
+        all_transaction_ids = sorted(list(set(transactions_of_tg_data_ids.keys()).union(transactions_of_tg_back_end_data_ids.keys())))
+      
+        for idx, transaction_id in enumerate(all_transaction_ids):
+            print(f"idx: {idx}")
+            transactions_of_tg_doc = transactions_of_tg_data_ids.get(transaction_id)
+            transactions_of_tg_back_end_doc = transactions_of_tg_back_end_data_ids.get(transaction_id)
+            
+            ### Similarity check
+            if transactions_of_tg_doc != transactions_of_tg_back_end_doc:
+                if transactions_of_tg_back_end_doc:
+                    # อัพเดตเอกสาร
+                    # self.transactions_of_tg_back_end.update_one(
+                    #     {'_id': transaction_id},
+                    #     {'$set': transactions_of_tg_doc}
+                    # )
+                    print(f"Updated document with transaction_id: {transaction_id}")
+                else:
+                    # เพิ่มเอกสารใหม่
+                    # transactions_of_tg_doc['initialCredit'] = self.dict_initial_credits[transactions_of_tg_doc['accountId']]
+                    # self.transactions_of_tg_back_end.insert_one(transactions_of_tg_doc)
+                    print(f"Inserted document with transaction_id: {transaction_id}")
+
+                print(f"เอกสารที่แตกต่างกันที่ transaction_id: {transaction_id}")
+                print("Database 1:", transactions_of_tg_doc)
+                print("Database 2:", transactions_of_tg_back_end_doc)
+                count += 1
+            
+            print()
+
+# เรียกใช้ฟังก์ชันเพื่อเปรียบเทียบข้อมูล
+CheckDatabaseSimilarity().compare_collections()

@@ -3,7 +3,7 @@ import time
 from pymongo import MongoClient
 from datetime import datetime
 
-class CheckDatabaseSimilarity():
+class InsertTransactionsAndUpdateStatuses():
     def __init__(self):
         ### สร้างการเชื่อมต่อกับ MongoDB
         client = MongoClient(f"mongodb://ubuntu:techglobetrading@13.229.230.27:27017")

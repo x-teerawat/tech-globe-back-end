@@ -135,5 +135,5 @@ class InsertTransactionsAndUpdateStatuses():
             time.sleep(1)
 
 if __name__ == "__main__":
-    # CheckDatabaseSimilarity().job()
-    CheckDatabaseSimilarity().schedule_jobs()
+    # InsertTransactionsAndUpdateStatuses().job()
+    InsertTransactionsAndUpdateStatuses().schedule_jobs()

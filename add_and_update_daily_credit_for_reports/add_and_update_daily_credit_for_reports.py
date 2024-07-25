@@ -14,7 +14,6 @@ accounts_collection = "accounts"
 
 tg_back_end_database = "tg-back-end"
 credits_collection = "credits"
-initial_date = datetime.today().strftime('%Y-%m-%d')
 
 # สร้างการเชื่อมต่อกับ MongoDB
 client = MongoClient(f"mongodb://ubuntu:techglobetrading@13.229.230.27:27017")
@@ -44,6 +43,7 @@ def get_last_date():
         return None
     
 def add_daily_initial_credit():
+    initial_date = datetime.today().strftime('%Y-%m-%d')
     
     # tg database
     _tg_database = client[tg_database] # Select/Create database

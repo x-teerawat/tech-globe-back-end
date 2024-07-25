@@ -1,7 +1,9 @@
+import pandas as pd
 import schedule
 import time
 from pymongo import MongoClient
 from datetime import datetime
+from dateutil.relativedelta import *
 
 class InsertTransactionsAndUpdateStatuses():
     def __init__(self):
@@ -113,11 +115,23 @@ class InsertTransactionsAndUpdateStatuses():
 
     ### ฟังก์ชันที่จะรันเป็น schedule
     def job(self):
+        start_date = datetime.now()
+        end_date = pd.to_datetime((datetime.now() + relativedelta(days=1)).strftime('%Y-%m-%d') + ' 05:00:00')
+        
         while True:
-            now = datetime.now().time()
-            if now >= datetime.strptime("20:30", "%H:%M").time() or now <= datetime.strptime("05:00", "%H:%M").time():
+            # now = datetime.now().time()
+            # if now >= datetime.strptime("20:30", "%H:%M").time():
+            #     self.compare_collections()
+            # if now > end_date:
+            #     print(f"Ending job at {now}")
+            #     break
+            # time.sleep(1)
+            # self.compare_collections()
+            
+            now = datetime.now()
+            if now < end_date:
                 self.compare_collections()
-            if now > datetime.strptime("05:00", "%H:%M").time():
+            else:
                 print(f"Ending job at {now}")
                 break
             time.sleep(1)
@@ -137,3 +151,11 @@ class InsertTransactionsAndUpdateStatuses():
 if __name__ == "__main__":
     # InsertTransactionsAndUpdateStatuses().job()
     InsertTransactionsAndUpdateStatuses().schedule_jobs()
+    
+    # start_date = datetime.now()
+    # end_date = pd.to_datetime((datetime.now() + relativedelta(days=1)).strftime('%Y-%m-%d') + ' 05:00:00')
+    # end_date = pd.to_datetime((datetime.now() - relativedelta(days=1)).strftime('%Y-%m-%d') + ' 05:00:00')
+    # print(f"start_date: {start_date}")
+    # print(f"end_date: {end_date}")
+    # print(f"start_date>end_date: {start_date>end_date}")
+    # print(f"datetime.strptime('05:00', '%H:%M').time(): {datetime.strptime('05:00', '%H:%M').time()}")

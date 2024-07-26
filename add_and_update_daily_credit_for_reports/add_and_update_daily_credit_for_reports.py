@@ -44,6 +44,7 @@ def get_last_date():
     
 def add_daily_initial_credit():
     initial_date = datetime.today().strftime('%Y-%m-%d')
+    print(f"initial_date: {initial_date}")
     
     # tg database
     _tg_database = client[tg_database] # Select/Create database

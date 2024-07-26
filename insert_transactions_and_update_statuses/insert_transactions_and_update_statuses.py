@@ -102,14 +102,23 @@ class InsertTransactionsAndUpdateStatuses():
                 transactions_of_tg_doc = transactions_of_tg_data_ids.get(transaction_id)
                 transactions_of_tg_back_end_doc = transactions_of_tg_back_end_data_ids.get(transaction_id)
                 
-                ### Status check
+                ### status check
                 if transactions_of_tg_doc['status'] != transactions_of_tg_back_end_doc['status']:
                     ### อัพเดตเอกสาร
                     self.transactions_of_tg_back_end.update_one(
                         {'_id': transaction_id},
                         {'$set': transactions_of_tg_doc}
                     )
-                    print(f"Updated document with transaction_id: {transaction_id} [{datetime.now()}]")
+                    print(f"Updated status with transaction_id: {transaction_id} [{datetime.now()}]")
+                    
+            ### closedPrice check
+            if transactions_of_tg_doc['closedPrice'] != transactions_of_tg_back_end_doc['closedPrice']:
+                ### อัพเดตเอกสาร
+                self.transactions_of_tg_back_end.update_one(
+                    {'_id': transaction_id},
+                    {'$set': transactions_of_tg_doc}
+                )
+                print(f"Updated closedPrice with transaction_id: {transaction_id} [{datetime.now()}]")
                     
         print()
 

@@ -160,11 +160,3 @@ class InsertTransactionsAndUpdateStatuses():
 if __name__ == "__main__":
     # InsertTransactionsAndUpdateStatuses().job()
     InsertTransactionsAndUpdateStatuses().schedule_jobs()
-    
-    # start_date = datetime.now()
-    # end_date = pd.to_datetime((datetime.now() + relativedelta(days=1)).strftime('%Y-%m-%d') + ' 05:00:00')
-    # end_date = pd.to_datetime((datetime.now() - relativedelta(days=1)).strftime('%Y-%m-%d') + ' 05:00:00')
-    # print(f"start_date: {start_date}")
-    # print(f"end_date: {end_date}")
-    # print(f"start_date>end_date: {start_date>end_date}")
-    # print(f"datetime.strptime('05:00', '%H:%M').time(): {datetime.strptime('05:00', '%H:%M').time()}")
